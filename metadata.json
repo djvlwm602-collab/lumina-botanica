@@ -1,0 +1,5 @@
+{
+  "name": "Lumina Botanica",
+  "description": "A luxurious, weather-driven plant care ecosystem featuring interactive 3D environments.",
+  "requestFramePermissions": ["geolocation"]
+}
