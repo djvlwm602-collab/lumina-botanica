@@ -21,16 +21,7 @@ export default function ThemeSelector({ currentBg, onSelect }: ThemeSelectorProp
       initial={{ opacity: 0, y: 32 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 1.0, duration: 1.0, ease: 'easeOut' }}
-      className="fixed bottom-6 right-6 z-[20] flex flex-col items-center liquid-glass"
-      style={{
-        borderRadius: '999px',
-        padding: '6px',
-        background: 'rgba(255, 255, 255, 0.15)',
-        border: '0.5px solid rgba(255, 255, 255, 0.3)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-      }}
+      className="fixed bottom-8 right-6 z-[20] flex flex-col items-center gap-3"
     >
       {THEMES.map((theme) => {
         const Icon = theme.icon;
@@ -41,7 +32,7 @@ export default function ThemeSelector({ currentBg, onSelect }: ThemeSelectorProp
             key={theme.key}
             title={theme.label}
             onClick={() => onSelect(theme.key)}
-            className={`relative p-2.5 rounded-full flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-white/30 scale-110 shadow-sm' : 'hover:bg-white/15 hover:scale-105 opacity-70 hover:opacity-100'}`}
+            className={`relative p-3 rounded-full flex items-center justify-center transition-all duration-300 backdrop-blur-md shadow-md border border-white/30 ${isActive ? 'bg-white/30 scale-110 shadow-lg' : 'bg-white/10 hover:bg-white/20 hover:scale-105 opacity-70 hover:opacity-100'}`}
           >
             <Icon strokeWidth={2.5} className={`w-5 h-5 ${isActive ? 'text-white' : 'text-white/80'}`} />
           </button>
