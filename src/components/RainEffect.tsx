@@ -1,6 +1,6 @@
 /**
- * Role: 물주기 버튼 클릭 시 고품질 GLSL 셰이더 기반 비 내리는 효과 + 무지개 연출
- * Key Features: SDF 줄기 렌더링, 3레이어 깊이감, fade-in/out, 가장자리 감쇠, 비 끝자락 무지개
+ * Role: GLSL 셰이더 기반 비 내리는 효과 — rainy 배경 상시(loop) 및 물주기 버튼 일회성 지원
+ * Key Features: SDF 줄기 렌더링, 3레이어 깊이감, fade-in/out, 가장자리 감쇠, 물주기 무지개
  * Dependencies: React, motion/react
  */
 
@@ -18,6 +18,7 @@ const FRAG = `
   precision highp float;
   uniform float uTime;
   uniform float uWaterStartTime;
+  uniform float uLoop;
   uniform vec2  uResolution;
 
   // 품질 좋은 해시 함수
@@ -83,9 +84,9 @@ const FRAG = `
     float activeTime = uTime - uWaterStartTime;
     float duration   = 3.0;
 
-    // 0.25s fade-in + 마지막 0.5s fade-out
+    // loop=1: fade-in 후 계속 유지 / loop=0: 3s 후 fade-out 종료
     float fadeIn  = smoothstep(0.0, 0.25, activeTime);
-    float fadeOut = smoothstep(duration, duration - 0.5, activeTime);
+    float fadeOut = mix(smoothstep(duration, duration - 0.5, activeTime), 1.0, uLoop);
     float intensity = fadeIn * fadeOut;
 
     if (intensity <= 0.001) { gl_FragColor = vec4(0.0); return; }
@@ -145,24 +146,27 @@ function initGL(canvas: HTMLCanvasElement) {
     gl,
     timeLoc:      gl.getUniformLocation(prog, 'uTime')!,
     startTimeLoc: gl.getUniformLocation(prog, 'uWaterStartTime')!,
+    loopLoc:      gl.getUniformLocation(prog, 'uLoop')!,
     resLoc:       gl.getUniformLocation(prog, 'uResolution')!,
   };
 }
 
 interface Props {
-  onDone: () => void; // 효과 완료 후 부모에 알림
+  onDone?: () => void; // 효과 완료 후 부모에 알림 (loop 모드에서는 불필요)
+  loop?: boolean;      // true: rainy 배경 상시 비 연출 (fade-out 없이 계속 실행)
 }
 
-export default function RainEffect({ onDone }: Props) {
+export default function RainEffect({ onDone, loop = false }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // 비 끝자락(1.6s)에 무지개 등장 → 2.6s에 fade-out 시작 → 3.6s에 완전히 사라짐
+  // 물주기 일회성 모드: 비 끝자락(1.6s)에 무지개 등장 → 2.6s fade-out → 3.6s 종료
   const [rainbowOpacity, setRainbowOpacity] = useState(0);
 
   useEffect(() => {
+    if (loop) return; // rainy 상시 모드에서는 무지개 없음
     const t1 = setTimeout(() => setRainbowOpacity(1), 1600);
     const t2 = setTimeout(() => setRainbowOpacity(0), 2600);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
+  }, [loop]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -173,13 +177,15 @@ export default function RainEffect({ onDone }: Props) {
 
     const glCtx = initGL(canvas);
     if (!glCtx) return;
-    const { gl, timeLoc, startTimeLoc, resLoc } = glCtx;
+    const { gl, timeLoc, startTimeLoc, loopLoc, resLoc } = glCtx;
 
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.uniform2f(resLoc, canvas.width, canvas.height);
+    gl.uniform1f(loopLoc, loop ? 1.0 : 0.0); // 셰이더에 loop 여부 전달
 
     const waterStart = performance.now() / 1000;
     let rafId: number;
+    let active = true;
 
     const render = () => {
       const now = performance.now() / 1000;
@@ -189,16 +195,19 @@ export default function RainEffect({ onDone }: Props) {
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-      if (now - waterStart < 3.6) {
+      if (loop) {
+        // 루프 모드: 컴포넌트 언마운트 전까지 계속 실행
+        if (active) rafId = requestAnimationFrame(render);
+      } else if (now - waterStart < 3.6) {
         rafId = requestAnimationFrame(render);
       } else {
-        onDone();
+        onDone?.();
       }
     };
 
     rafId = requestAnimationFrame(render);
-    return () => cancelAnimationFrame(rafId);
-  }, [onDone]);
+    return () => { active = false; cancelAnimationFrame(rafId); };
+  }, [loop, onDone]);
 
   return (
     <>
@@ -209,37 +218,38 @@ export default function RainEffect({ onDone }: Props) {
         style={{ zIndex: 16, mixBlendMode: 'screen' }}
       />
 
-      {/* 무지개 — 비 끝자락 은은하게 등장, 하단 중앙에서 호 형태로 퍼짐 */}
-      <motion.div
-        className="fixed inset-0 pointer-events-none"
-        animate={{ opacity: rainbowOpacity }}
-        transition={{ duration: 1.0, ease: 'easeInOut' }}
-        style={{ zIndex: 17 }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '80vh',
-            // 하단 중앙을 원점으로 동심 타원 링 → 무지개 호 형태
-            background: `radial-gradient(
-              ellipse 85% 95% at 50% 108%,
-              transparent 33%,
-              rgba(180, 0, 255, 0.22) 35%,
-              rgba(80, 0, 200, 0.20) 37.5%,
-              rgba(0, 80, 230, 0.22) 40%,
-              rgba(0, 190, 80, 0.22) 42.5%,
-              rgba(220, 230, 0, 0.22) 45%,
-              rgba(255, 140, 0, 0.22) 47.5%,
-              rgba(230, 20, 20, 0.22) 50%,
-              transparent 53%
-            )`,
-            filter: 'blur(14px)',
-          }}
-        />
-      </motion.div>
+      {/* 무지개 — 물주기 일회성 모드 전용, 비 끝자락 은은하게 등장 */}
+      {!loop && (
+        <motion.div
+          className="fixed inset-0 pointer-events-none"
+          animate={{ opacity: rainbowOpacity }}
+          transition={{ duration: 1.0, ease: 'easeInOut' }}
+          style={{ zIndex: 17 }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '80vh',
+              background: `radial-gradient(
+                ellipse 85% 95% at 50% 108%,
+                transparent 33%,
+                rgba(180, 0, 255, 0.22) 35%,
+                rgba(80, 0, 200, 0.20) 37.5%,
+                rgba(0, 80, 230, 0.22) 40%,
+                rgba(0, 190, 80, 0.22) 42.5%,
+                rgba(220, 230, 0, 0.22) 45%,
+                rgba(255, 140, 0, 0.22) 47.5%,
+                rgba(230, 20, 20, 0.22) 50%,
+                transparent 53%
+              )`,
+              filter: 'blur(14px)',
+            }}
+          />
+        </motion.div>
+      )}
     </>
   );
 }

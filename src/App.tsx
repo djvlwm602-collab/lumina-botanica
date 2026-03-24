@@ -213,6 +213,9 @@ export default function App() {
       {/* GLSL 태양 광선 — 주기적으로 스르륵 나타났다 사라짐 */}
       <LightRays />
 
+      {/* rainy 배경: 상시 비 내리는 효과 (loop 모드) */}
+      {bgKey === 'rainy' && <RainEffect loop />}
+
       {/* 물주기 GLSL 비 효과 */}
       {isWatering && <RainEffect onDone={() => setIsWatering(false)} />}
 
