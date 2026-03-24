@@ -127,25 +127,15 @@ export default function App() {
     }
   }, []);
 
-  const getWeatherGreeting = () => {
-    if (!weather) return { line1: '', line2: '' };
+  const getWeatherGreeting = (): string => {
+    if (!weather) return '';
 
-    if (weather.precipitation > 0) {
-      return { line1: '비 오는 날,', line2: '자연이 식물을 돌봐요' };
-    }
-    if (weather.temp > 28) {
-      return { line1: '뜨거운 여름,', line2: '식물에게 물 한 잔을' };
-    }
-    if (weather.temp < 10) {
-      return { line1: '추운 겨울,', line2: '식물을 따뜻하게 품어주세요' };
-    }
-    if (weather.humidity < 40) {
-      return { line1: '건조한 공기,', line2: '분무기를 꺼내세요' };
-    }
-    if (weather.humidity > 70) {
-      return { line1: '촉촉한 날,', line2: '통풍을 잊지 마세요' };
-    }
-    return { line1: '맑고 상쾌한 날,', line2: '식물도 활짝 웃어요' };
+    if (weather.precipitation > 0)  return '오늘은 자연이 식물을 돌봐요 🌧️';
+    if (weather.temp > 28)           return '지금 바로 물을 주세요 🌵';
+    if (weather.temp < 10)           return '식물을 따뜻하게 품어주세요 🧣';
+    if (weather.humidity < 40)       return '분무기를 꺼낼 시간이에요 💧';
+    if (weather.humidity > 70)       return '통풍을 잊지 마세요 🌿';
+    return '식물도 당신도 활짝 피어나요 🌸';
   };
 
   const getCareRecommendation = () => {
@@ -267,24 +257,18 @@ export default function App() {
       </motion.header>
 
       {/* 중앙 날씨 인사 문구 오버레이 */}
-      {weather && (() => {
-        const { line1, line2 } = getWeatherGreeting();
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, ease: 'easeOut', delay: 0.6 }}
-            className="fixed inset-0 z-[10] flex flex-col items-center justify-center pointer-events-none select-none"
-          >
-            <p className="font-serif text-[clamp(1.1rem,2.5vw,1.6rem)] font-light tracking-[0.2em] text-botanical-100/60 mb-1">
-              {line1}
-            </p>
-            <p className="font-serif text-[clamp(1.8rem,5vw,3.5rem)] font-light tracking-[0.1em] text-botanical-100">
-              {line2}
-            </p>
-          </motion.div>
-        );
-      })()}
+      {weather && (
+        <motion.div
+          initial={{ opacity: 0, y: -138 }}
+          animate={{ opacity: 1, y: -150 }}
+          transition={{ duration: 1.2, ease: 'easeOut', delay: 0.6 }}
+          className="fixed inset-0 z-[10] flex items-center justify-center pointer-events-none select-none"
+        >
+          <p className="font-sans text-[clamp(2.16rem,5.04vw,3.6rem)] font-semibold tracking-[-0.02em] text-botanical-100 text-center px-6">
+            {getWeatherGreeting()}
+          </p>
+        </motion.div>
+      )}
 
       {/* Scroll Indicator */}
       <motion.div 
