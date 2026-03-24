@@ -9,6 +9,7 @@ import { Droplets, Wind, Thermometer, MapPin, Sun } from 'lucide-react';
 import SunnyEffect from './components/SunnyEffect';
 import LightRays from './components/LightRays';
 import RainEffect from './components/RainEffect';
+import LightningEffect from './components/LightningEffect';
 import WeatherSceneEffect from './components/WeatherSceneEffect';
 
 export interface WeatherData {
@@ -179,7 +180,7 @@ export default function App() {
         if (weather.temp > 28)      return '지금 바로 물을 주세요 🌵';
         if (weather.temp < 10)      return '식물을 따뜻하게 품어주세요 🧣';
         if (weather.humidity < 40)  return '분무기를 꺼낼 시간이에요 💧';
-        return '식물도 당신도 활짝 피어나요 🌸';
+        return '물 한 잔 주기 딱 좋은 날씨 ☀️';
     }
   };
 
@@ -246,6 +247,9 @@ export default function App() {
 
       {/* rainy 배경: 상시 비 내리는 효과 (loop 모드) */}
       {bgKey === 'rainy' && <RainEffect loop />}
+
+      {/* rainy 배경: 번개 번쩍임 효과 */}
+      {bgKey === 'rainy' && <LightningEffect />}
 
       {/* 물주기 GLSL 비 효과 */}
       {isWatering && <RainEffect onDone={() => setIsWatering(false)} />}
@@ -359,10 +363,8 @@ export default function App() {
       {/* 중앙 날씨 인사 문구 오버레이 */}
       {weather && (
         <motion.div
-          initial={{ opacity: 0, y: -138 }}
-          animate={{ opacity: 1, y: -150 }}
-          transition={{ duration: 1.2, ease: 'easeOut', delay: 0.6 }}
           className="fixed inset-0 z-[10] flex items-center justify-center pointer-events-none select-none"
+          style={{ transform: 'translateY(-150px)' }}
         >
           <p className="font-sans text-[clamp(2.16rem,5.04vw,3.6rem)] font-semibold tracking-[-0.02em] text-botanical-100 text-center px-6">
             {getWeatherGreeting()}
