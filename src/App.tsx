@@ -6,6 +6,8 @@
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'motion/react';
 import { Droplets, Wind, Thermometer, MapPin, Sun } from 'lucide-react';
+import SunnyEffect from './components/SunnyEffect';
+import LightRays from './components/LightRays';
 
 export interface WeatherData {
   temp: number;
@@ -62,8 +64,9 @@ export default function App() {
   const [locationName, setLocationName] = useState('런던, 영국'); // Default fallback
   const [bgKey, setBgKey] = useState<string>('clear_sunny');
 
+
   const { scrollYProgress } = useScroll();
-  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.3]);
+  const scale = useTransform(scrollYProgress, [0, 1], [1.1, 1.7]);
 
   // 마우스 위치 → 배경 패럴랙스용 모션 값
   const rawX = useMotionValue(0);
@@ -74,13 +77,18 @@ export default function App() {
   const bgY = useSpring(rawY, { stiffness: 40, damping: 18 });
 
   useEffect(() => {
+    let ticking = false;
     const onMouseMove = (e: MouseEvent) => {
-      // -0.5 ~ 0.5 정규화 후 이동 범위(px) 적용
-      // 음수 방향: 마우스 오른쪽 → 배경 왼쪽으로 → 시선이 오른쪽을 향하는 느낌
-      const x = (e.clientX / window.innerWidth - 0.5) * -35;
-      const y = (e.clientY / window.innerHeight - 0.5) * -20;
-      rawX.set(x);
-      rawY.set(y);
+      // rAF으로 쓰로틀링 — 프레임당 최대 1회만 처리
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const x = (e.clientX / window.innerWidth - 0.5) * -35;
+        const y = (e.clientY / window.innerHeight - 0.5) * -20;
+        rawX.set(x);
+        rawY.set(y);
+        ticking = false;
+      });
     };
     window.addEventListener('mousemove', onMouseMove);
     return () => window.removeEventListener('mousemove', onMouseMove);
@@ -182,6 +190,12 @@ export default function App() {
         }}
       />
 
+      {/* 맑은 날씨 렌즈 플레어 효과 */}
+      {bgKey === 'clear_sunny' && <SunnyEffect />}
+
+      {/* GLSL 태양 광선 — 주기적으로 스르륵 나타났다 사라짐 */}
+      <LightRays />
+
       {/* 심도감 비네트 — 고정 오버레이, 주변부를 어둡게 해 공간감 강조 */}
       <div
         className="fixed inset-0 z-[1] pointer-events-none"
@@ -189,10 +203,7 @@ export default function App() {
       />
 
       {/* Spline 3D — 비네트 위, 날씨 배경 위에 투명하게 올라감 */}
-      <motion.div
-        style={{ scale }}
-        className="fixed inset-0 z-[2] pointer-events-auto origin-center"
-      >
+      <motion.div style={{ scale }} className="fixed inset-0 z-[2] pointer-events-auto origin-center">
         <iframe
           src="https://my.spline.design/beeflyingflowerwebheroglbanimation-Qx6RSykiOHx1tLfscEvpdq1u/"
           frameBorder="0"
@@ -204,56 +215,72 @@ export default function App() {
         />
       </motion.div>
 
-      {/* Subtle Top Gradient for Readability */}
-      <div className="fixed top-0 inset-x-0 h-32 z-[3] pointer-events-none bg-gradient-to-b from-black/60 to-transparent" />
-
-      {/* Top Weather Tab Line */}
-      <motion.header 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="fixed top-0 inset-x-0 z-[10] w-full px-6 md:px-12 py-4 flex flex-col lg:flex-row items-center justify-between gap-4 pointer-events-auto backdrop-blur-md bg-botanical-900/30 border-b border-white/10"
+      {/* Liquid Glass 네비게이션 바 — pill 형태 */}
+      <motion.header
+        initial={{ opacity: 0, y: -32, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 1.0, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="fixed top-5 inset-x-4 md:inset-x-10 lg:inset-x-16 z-[10] pointer-events-auto"
       >
-        {loading ? (
-          <div className="w-full flex justify-center items-center py-2">
-            <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : weather ? (
-          <>
-            {/* Left: Location & Basic Metrics */}
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 lg:gap-10 text-xs tracking-[0.15em] uppercase font-medium">
-              <div className="flex items-center gap-2 text-accent">
-                <MapPin className="w-4 h-4" />
-                <span>{locationName}</span>
-              </div>
-              
-              <div className="flex items-center gap-6 text-botanical-100/90">
-                <div className="flex items-center gap-2">
-                  <Thermometer className="w-4 h-4 text-botanical-100/50" />
-                  <span>{weather.temp.toFixed(1)}°</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Droplets className="w-4 h-4 text-botanical-100/50" />
-                  <span>{weather.humidity}%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Wind className="w-4 h-4 text-botanical-100/50" />
-                  <span>{weather.wind.toFixed(1)} km/h</span>
-                </div>
-              </div>
+        <div
+          className="liquid-glass w-full px-5 md:px-8 py-[14px] flex items-center justify-between gap-4"
+          style={{ borderRadius: '9999px' }}
+        >
+          {loading ? (
+            <div className="w-full flex justify-center items-center py-0.5">
+              <div className="w-4 h-4 border-2 border-white/50 border-t-transparent rounded-full animate-spin" />
             </div>
+          ) : weather ? (
+            <>
+              {/* 왼쪽(flex-start): 위치 pill + 날씨 수치 */}
+              <div className="flex items-center gap-4 md:gap-6">
+                {/* 위치 */}
+                <div className="flex items-center gap-1.5 text-white/95 text-sm font-semibold tracking-wide shrink-0">
+                  <MapPin className="w-4 h-4 text-white/70" />
+                  <span>{locationName}</span>
+                </div>
 
-            {/* Right: AI Recommendation */}
-            <div className="flex items-center gap-3 text-[10px] md:text-xs tracking-widest uppercase text-botanical-100/80 max-w-xl text-center lg:text-right mt-2 lg:mt-0">
-              <Sun className="w-4 h-4 text-accent shrink-0 hidden md:block" />
-              <span className="truncate">{getCareRecommendation()}</span>
+                {/* 구분선 */}
+                <div className="w-px h-4 bg-white/20 hidden sm:block" />
+
+                {/* 날씨 수치 */}
+                <div className="hidden sm:flex items-center gap-4 text-white/75 text-sm font-medium">
+                  <div className="flex items-center gap-1.5">
+                    <Thermometer className="w-4 h-4 text-white/50" />
+                    <span>{weather.temp.toFixed(1)}°</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Droplets className="w-4 h-4 text-white/50" />
+                    <span>{weather.humidity}%</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Wind className="w-4 h-4 text-white/50" />
+                    <span>{weather.wind.toFixed(1)} km/h</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 오른쪽(flex-end): 물주기 버튼 */}
+              <button
+                className="shrink-0 flex items-center gap-2.5 px-7 py-3 text-white text-sm font-bold tracking-wide transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+                style={{
+                  borderRadius: '9999px',
+                  background: '#ffffff',
+                  border: 'none',
+                  boxShadow: 'none',
+                  minWidth: '100px',
+                }}
+              >
+                <Droplets className="w-4 h-4 text-black" />
+                <span className="text-black">물주기</span>
+              </button>
+            </>
+          ) : (
+            <div className="w-full text-center text-xs text-white/35">
+              날씨 데이터를 불러올 수 없습니다.
             </div>
-          </>
-        ) : (
-          <div className="w-full text-center text-xs tracking-widest uppercase text-botanical-100/50 py-2">
-            날씨 데이터를 불러올 수 없습니다.
-          </div>
-        )}
+          )}
+        </div>
       </motion.header>
 
       {/* 중앙 날씨 인사 문구 오버레이 */}

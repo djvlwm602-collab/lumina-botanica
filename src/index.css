@@ -20,3 +20,71 @@ body {
   padding: 0;
   overflow-x: hidden;
 }
+
+/* Liquid Glass — Apple iOS 26 스타일 */
+.liquid-glass {
+  position: relative;
+  /* 강한 블러로 뒤 배경을 굴절·반사 */
+  backdrop-filter: blur(40px) saturate(200%) brightness(1.08) contrast(1.05);
+  -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.08) contrast(1.05);
+  /* 반투명 유리 배경 — 빛 굴절 그라디언트 */
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.08) 35%,
+      rgba(255, 255, 255, 0.04) 60%,
+      rgba(255, 255, 255, 0.14) 100%
+    );
+  /* 테두리: 상단 강한 하이라이트, 하단 미세 섀도 */
+  border: 0.5px solid rgba(255, 255, 255, 0.18);
+  border-top-color: rgba(255, 255, 255, 0.35);
+  border-bottom-color: rgba(255, 255, 255, 0.04);
+  /* 그림자: 외부 깊이 + 내부 광택 줄기 */
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    inset 1px 0 0 rgba(255, 255, 255, 0.15),
+    inset -1px 0 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+/* 상단 스펙큘러 하이라이트 — 빛이 유리 표면에 반사되는 줄기 */
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    175deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.06) 30%,
+    transparent 55%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 하단 미세 반사 — 유리 하단부 빛 굴절 */
+.liquid-glass::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  right: 10%;
+  height: 40%;
+  background: linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.liquid-glass > * {
+  position: relative;
+  z-index: 2;
+}
