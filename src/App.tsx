@@ -8,6 +8,7 @@ import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'moti
 import { Droplets, Wind, Thermometer, MapPin, Sun } from 'lucide-react';
 import SunnyEffect from './components/SunnyEffect';
 import LightRays from './components/LightRays';
+import RainEffect from './components/RainEffect';
 
 export interface WeatherData {
   temp: number;
@@ -63,6 +64,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [locationName, setLocationName] = useState('런던, 영국'); // Default fallback
   const [bgKey, setBgKey] = useState<string>('clear_sunny');
+  const [isWatering, setIsWatering] = useState(false);
 
 
   const { scrollYProgress } = useScroll();
@@ -196,6 +198,9 @@ export default function App() {
       {/* GLSL 태양 광선 — 주기적으로 스르륵 나타났다 사라짐 */}
       <LightRays />
 
+      {/* 물주기 GLSL 비 효과 */}
+      {isWatering && <RainEffect onDone={() => setIsWatering(false)} />}
+
       {/* 심도감 비네트 — 고정 오버레이, 주변부를 어둡게 해 공간감 강조 */}
       <div
         className="fixed inset-0 z-[1] pointer-events-none"
@@ -262,7 +267,9 @@ export default function App() {
 
               {/* 오른쪽(flex-end): 물주기 버튼 */}
               <button
-                className="shrink-0 flex items-center gap-2.5 px-7 py-3 text-white text-sm font-bold tracking-wide transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+                onClick={() => { if (!isWatering) setIsWatering(true); }}
+                disabled={isWatering}
+                className="shrink-0 flex items-center gap-2.5 px-7 py-3 text-white text-sm font-bold tracking-wide transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   borderRadius: '9999px',
                   background: '#ffffff',
