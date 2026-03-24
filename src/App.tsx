@@ -9,6 +9,7 @@ import { Droplets, Wind, Thermometer, MapPin, Sun } from 'lucide-react';
 import SunnyEffect from './components/SunnyEffect';
 import LightRays from './components/LightRays';
 import RainEffect from './components/RainEffect';
+import WeatherSceneEffect from './components/WeatherSceneEffect';
 
 export interface WeatherData {
   temp: number;
@@ -63,7 +64,12 @@ export default function App() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [locationName, setLocationName] = useState('런던, 영국'); // Default fallback
-  const [bgKey, setBgKey] = useState<string>('clear_sunny');
+  // ?bg=rainy 등 쿼리 파라미터로 배경 강제 지정 가능 (테스트용)
+  const VALID_BG_KEYS = ['clear_sunny', 'overcast', 'rainy', 'sunset', 'misty', 'windy'];
+  const bgOverride = new URLSearchParams(window.location.search).get('bg');
+  const [bgKey, setBgKey] = useState<string>(
+    bgOverride && VALID_BG_KEYS.includes(bgOverride) ? bgOverride : 'clear_sunny'
+  );
   const [isWatering, setIsWatering] = useState(false);
 
 
@@ -111,8 +117,10 @@ export default function App() {
           cloudCover: data.current.cloud_cover,
         };
         setWeather(parsed);
-        // 날씨 데이터 수신 후 배경 키 업데이트
-        setBgKey(getWeatherBgKey(parsed));
+        // ?bg= 오버라이드 없을 때만 실제 날씨로 배경 업데이트
+        if (!bgOverride || !VALID_BG_KEYS.includes(bgOverride)) {
+          setBgKey(getWeatherBgKey(parsed));
+        }
       } catch (error) {
         console.error('Failed to fetch weather:', error);
       } finally {
@@ -137,15 +145,22 @@ export default function App() {
     }
   }, []);
 
+  // bgKey 기준으로 문구 결정 — 배경과 항상 일치하도록
   const getWeatherGreeting = (): string => {
     if (!weather) return '';
 
-    if (weather.precipitation > 0)  return '오늘은 자연이 식물을 돌봐요 🌧️';
-    if (weather.temp > 28)           return '지금 바로 물을 주세요 🌵';
-    if (weather.temp < 10)           return '식물을 따뜻하게 품어주세요 🧣';
-    if (weather.humidity < 40)       return '분무기를 꺼낼 시간이에요 💧';
-    if (weather.humidity > 70)       return '통풍을 잊지 마세요 🌿';
-    return '식물도 당신도 활짝 피어나요 🌸';
+    switch (bgKey) {
+      case 'rainy':    return '오늘은 자연이 식물을 돌봐요 🌧️';
+      case 'misty':    return '안개 낀 아침, 수분이 충분해요 🌫️';
+      case 'windy':    return '바람 부는 날, 식물을 단단히 붙잡아줘요 🍃';
+      case 'overcast': return '흐린 하늘 아래, 식물은 오늘도 자라요 🌥️';
+      case 'sunset':   return '노을빛 아래, 하루를 마무리해요 🌅';
+      default:         // clear_sunny — 온도·습도로 세분화
+        if (weather.temp > 28)      return '지금 바로 물을 주세요 🌵';
+        if (weather.temp < 10)      return '식물을 따뜻하게 품어주세요 🧣';
+        if (weather.humidity < 40)  return '분무기를 꺼낼 시간이에요 💧';
+        return '식물도 당신도 활짝 피어나요 🌸';
+    }
   };
 
   const getCareRecommendation = () => {
@@ -207,7 +222,7 @@ export default function App() {
         style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%)' }}
       />
 
-      {/* Spline 3D — 비네트 위, 날씨 배경 위에 투명하게 올라감 */}
+      {/* Spline 3D — 항상 표시 (벌+꽃이 같은 씬이라 분리 불가) */}
       <motion.div style={{ scale }} className="fixed inset-0 z-[2] pointer-events-auto origin-center">
         <iframe
           src="https://my.spline.design/beeflyingflowerwebheroglbanimation-Qx6RSykiOHx1tLfscEvpdq1u/"
@@ -219,6 +234,9 @@ export default function App() {
           style={{ background: 'transparent' }}
         />
       </motion.div>
+
+      {/* 날씨별 앰비언트 씬 효과 (clear_sunny 제외) */}
+      <WeatherSceneEffect bgKey={bgKey} />
 
       {/* Liquid Glass 네비게이션 바 — pill 형태 */}
       <motion.header
@@ -269,17 +287,17 @@ export default function App() {
               <button
                 onClick={() => { if (!isWatering) setIsWatering(true); }}
                 disabled={isWatering}
-                className="shrink-0 flex items-center gap-2.5 px-7 py-3 text-white text-sm font-bold tracking-wide transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="shrink-0 flex items-center gap-2.5 px-7 py-3 text-white/95 text-sm font-semibold tracking-wide transition-all duration-200 hover:scale-105 hover:bg-white/25 active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   borderRadius: '9999px',
-                  background: '#ffffff',
-                  border: 'none',
-                  boxShadow: 'none',
+                  background: 'rgba(255, 255, 255, 0.18)',
+                  border: '0.5px solid rgba(255, 255, 255, 0.45)',
+                  boxShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.5), 0 1px 6px rgba(0,0,0,0.08)',
                   minWidth: '100px',
                 }}
               >
-                <Droplets className="w-4 h-4 text-black" />
-                <span className="text-black">물주기</span>
+                <Droplets className="w-4 h-4 text-white/90" />
+                <span>물주기</span>
               </button>
             </>
           ) : (

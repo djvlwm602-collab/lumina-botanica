@@ -15,7 +15,8 @@ const VERT = `
   }
 `;
 
-// ── Fragment Shader (Shadertoy → WebGL 포팅) ───────────────────
+// ── Fragment Shader ────────────────────────────────────────────
+// soft-light 블렌드용: 0.5 = 중립(배경 영향 없음), 0.5+ = 따뜻하게 밝아짐
 const FRAG = `
   precision mediump float;
   uniform float uTime;
@@ -37,28 +38,37 @@ const FRAG = `
   void main() {
     vec2 coord = vec2(gl_FragCoord.x, uResolution.y - gl_FragCoord.y);
 
-    // 광원 1
+    // 광원 1, 2
     float r1 = rayStrength(
       vec2(uResolution.x * 0.7, uResolution.y * -0.4),
       normalize(vec2(1.0, -0.116)),
       coord, 36.2214, 21.11349, 1.5
     );
-    // 광원 2
     float r2 = rayStrength(
       vec2(uResolution.x * 0.8, uResolution.y * -0.6),
       normalize(vec2(1.0, 0.241)),
       coord, 22.39910, 18.0234, 1.1
     );
 
-    vec4 color = vec4(1.0) * (r1 * 0.5 + r2 * 0.4);
+    // 강도 축소: 기존 최대 0.9 → 0.58 (과도한 밝기 방지)
+    float strength = r1 * 0.32 + r2 * 0.26;
 
-    // 깊이감: 아래로 갈수록 감쇠 + 청록 틴트
-    float b = 1.0 - (coord.y / uResolution.y);
-    color.r *= 0.1 + b * 0.8;
-    color.g *= 0.3 + b * 0.6;
-    color.b *= 0.5 + b * 0.5;
+    // 화면 가장자리 vignette: 경계에서 부드럽게 사라짐
+    float nx   = coord.x / uResolution.x;
+    float ny   = coord.y / uResolution.y;
+    float edge = smoothstep(0.0, 0.22, nx) * smoothstep(1.0, 0.78, nx)
+               * smoothstep(0.0, 0.18, ny);
+    strength  *= edge;
 
-    gl_FragColor = color;
+    // soft-light 중립점 0.5 기준 황금빛 웜 매핑
+    // R > G > B → 따뜻한 햇살 색온도
+    float vr = 0.5 + strength * 0.20;
+    float vg = 0.5 + strength * 0.14;
+    float vb = 0.5 + strength * 0.07;
+
+    // alpha=1.0: soft-light는 불투명 픽셀 기준으로 동작
+    // 중립(strength=0) → vec4(0.5,0.5,0.5,1) = 배경에 완전히 영향 없음
+    gl_FragColor = vec4(vr, vg, vb, 1.0);
   }
 `;
 
@@ -106,7 +116,7 @@ export default function LightRays() {
 
     const cycle = (initialDelay: number) => {
       t1 = setTimeout(() => {
-        setOpacity(0.6);                        // fade-in (motion이 처리)
+        setOpacity(0.75);                       // fade-in — soft-light는 screen보다 은은해 opacity 상향
         t2 = setTimeout(() => {
           setOpacity(0);                        // fade-out
           cycle(10000);                         // 10s 뒤 다음 사이클
@@ -169,9 +179,9 @@ export default function LightRays() {
     <motion.canvas
       ref={canvasRef}
       className="fixed inset-0 w-full h-full pointer-events-none"
-      style={{ zIndex: 4, mixBlendMode: 'screen' }}
+      style={{ zIndex: 4, mixBlendMode: 'soft-light' }}
       animate={{ opacity }}
-      transition={{ duration: 2.5, ease: 'easeInOut' }}
+      transition={{ duration: 3.0, ease: 'easeInOut' }}
     />
   );
 }
