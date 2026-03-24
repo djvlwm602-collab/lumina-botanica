@@ -6,6 +6,7 @@
 
 import { useMemo } from 'react';
 import { motion } from 'motion/react';
+import MistyEffect from './MistyEffect';
 
 // ── Rainy: 유리창에 맺히고 흘러내리는 빗방울 ──────────────────
 function RainyScene() {
@@ -291,7 +292,7 @@ interface Props {
 export default function WeatherSceneEffect({ bgKey }: Props) {
   switch (bgKey) {
     case 'rainy':    return <RainyScene />;
-    case 'misty':    return <MistyScene />;
+    case 'misty':    return <><MistyScene /><MistyEffect /></>;
     case 'windy':    return <WindyScene />;
     case 'overcast': return <OvercastScene />;
     case 'sunset':   return <SunsetScene />;
