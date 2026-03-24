@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'motion/react';
 import { Droplets, Wind, Thermometer, MapPin, Sun } from 'lucide-react';
 import SunnyEffect from './components/SunnyEffect';
@@ -71,7 +71,27 @@ export default function App() {
     bgOverride && VALID_BG_KEYS.includes(bgOverride) ? bgOverride : 'clear_sunny'
   );
   const [isWatering, setIsWatering] = useState(false);
+  const displacementRef = useRef<SVGFEDisplacementMapElement>(null);
 
+
+  // overcast: SVG displacement 필터로 배경 이미지를 꿀렁이게 애니메이션
+  useEffect(() => {
+    if (bgKey !== 'overcast') {
+      displacementRef.current?.setAttribute('scale', '0');
+      return;
+    }
+    let raf: number;
+    let active = true;
+    const animate = () => {
+      const t = performance.now() / 1000;
+      // 두 사인파를 겹쳐 불규칙한 파동 — 8~20 범위로 꿀렁
+      const scale = 35 + Math.sin(t * 0.30) * 18 + Math.sin(t * 0.55 + 1.4) * 10;
+      displacementRef.current?.setAttribute('scale', String(scale));
+      if (active) raf = requestAnimationFrame(animate);
+    };
+    raf = requestAnimationFrame(animate);
+    return () => { active = false; cancelAnimationFrame(raf); };
+  }, [bgKey]);
 
   const { scrollYProgress } = useScroll();
   const scale = useTransform(scrollYProgress, [0, 1], [1.1, 1.7]);
@@ -188,6 +208,16 @@ export default function App() {
   return (
     <div className="relative h-[200vh] text-botanical-100 font-sans selection:bg-accent selection:text-botanical-900">
 
+      {/* overcast 꿀렁 효과용 SVG 필터 — display:none 대신 크기 0으로 숨김 (display:none이면 필터 무효) */}
+      <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+        <defs>
+          <filter id="overcast-wobble" x="-8%" y="-8%" width="116%" height="116%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.008 0.005" numOctaves="3" result="noise" />
+            <feDisplacementMap ref={displacementRef} in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
+
       {/* 날씨 배경 이미지 — 마우스 패럴랙스 적용 */}
       {/* scale(1.1): 패럴랙스 이동 시 가장자리 여백 확보 */}
       <motion.div
@@ -204,6 +234,7 @@ export default function App() {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           willChange: 'transform',
+          filter: bgKey === 'overcast' ? 'url(#overcast-wobble)' : 'none',
         }}
       />
 
