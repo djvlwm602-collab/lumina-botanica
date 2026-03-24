@@ -11,6 +11,7 @@ import LightRays from './components/LightRays';
 import RainEffect from './components/RainEffect';
 import LightningEffect from './components/LightningEffect';
 import WeatherSceneEffect from './components/WeatherSceneEffect';
+import ThemeSelector from './components/ThemeSelector';
 
 export interface WeatherData {
   temp: number;
@@ -382,6 +383,9 @@ export default function App() {
         <span className="text-[10px] tracking-[0.3em] uppercase text-botanical-100/50">Scroll</span>
         <div className="w-[1px] h-12 bg-gradient-to-b from-botanical-100/50 to-transparent"></div>
       </motion.div>
+
+      {/* Theme Selector Widget */}
+      <ThemeSelector currentBg={bgKey} onSelect={(key) => setBgKey(key)} />
     </div>
   );
 }
