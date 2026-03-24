@@ -364,8 +364,8 @@ export default function App() {
       {/* 중앙 날씨 인사 문구 오버레이 */}
       {weather && (
         <motion.div
-          className="fixed inset-0 z-[10] flex items-center justify-center pointer-events-none select-none"
-          style={{ transform: 'translateY(-150px)' }}
+          className="fixed inset-x-0 z-[10] flex justify-center pointer-events-none select-none"
+          style={{ top: '180px' }}
         >
           <p className="font-sans text-[clamp(2.16rem,5.04vw,3.6rem)] font-semibold tracking-[-0.02em] text-botanical-100 text-center px-6">
             {getWeatherGreeting()}
