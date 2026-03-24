@@ -226,7 +226,21 @@ export default function App() {
       />
 
       {/* Spline 3D — 항상 표시 (벌+꽃이 같은 씬이라 분리 불가) */}
-      <motion.div style={{ scale }} className="fixed inset-0 z-[2] pointer-events-auto origin-center">
+      {/* windy: 꽃이 바람에 흔들리는 느낌 — 컨테이너 전체를 좌우로 불규칙하게 기울임 */}
+      <motion.div
+        style={{ scale }}
+        className="fixed inset-0 z-[2] pointer-events-auto origin-bottom"
+        animate={bgKey === 'windy' ? {
+          rotate: [0, -3, 1.5, -4.5, 2, -2.5, 0.5, -3.5, 0],
+          x:      [0,  6,  -3,   8, -4,    5, -2,    7,  0],
+        } : { rotate: 0, x: 0 }}
+        transition={bgKey === 'windy' ? {
+          duration: 6,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          times: [0, 0.12, 0.28, 0.42, 0.55, 0.68, 0.80, 0.92, 1],
+        } : { duration: 0.8, ease: 'easeOut' }}
+      >
         <iframe
           src="https://my.spline.design/beeflyingflowerwebheroglbanimation-Qx6RSykiOHx1tLfscEvpdq1u/"
           frameBorder="0"
