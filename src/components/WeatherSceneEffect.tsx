@@ -90,7 +90,7 @@ function MistyScene() {
       blur: 45 + Math.random() * 35,
       opacity: 0.06 + Math.random() * 0.10,
       duration: 20 + Math.random() * 22,
-      delay: Math.random() * 12,
+      delay: Math.random() * 1.5,  // 12초 → 1.5초로 단축, 바로 등장
       dx: (Math.random() - 0.5) * 120,
       dy: (Math.random() - 0.5) * 60,
     })), []);
@@ -409,17 +409,155 @@ function SunsetScene() {
   );
 }
 
+// ── Clear Sunny: 꽃가루·보케·아지랑이·글리터 ─────────────────
+function ClearSunnyScene() {
+  // 꽃가루/먼지 입자 — 햇빛에 떠다니는 작은 점들
+  const pollen = useMemo(() =>
+    Array.from({ length: 40 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 1.5 + Math.random() * 2.5,
+      opacity: 0.25 + Math.random() * 0.45,
+      duration: 10 + Math.random() * 16,
+      delay: Math.random() * 8,
+      dx: (Math.random() - 0.5) * 80,
+      dy: -(30 + Math.random() * 80), // 위로 떠오름
+    })), []);
+
+  // 빛 보케 — 흐릿한 원형 빛 방울
+  const bokeh = useMemo(() =>
+    Array.from({ length: 14 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: 20 + Math.random() * 70,
+      size: 40 + Math.random() * 80,
+      opacity: 0.08 + Math.random() * 0.14,
+      duration: 8 + Math.random() * 12,
+      delay: Math.random() * 6,
+      dy: -(60 + Math.random() * 120),
+    })), []);
+
+
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 2 }}>
+
+      {/* 아지랑이 — 화면 하단 열기 왜곡용 SVG 필터 정의 */}
+      <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+        <defs>
+          <filter id="haze-filter" x="0%" y="0%" width="100%" height="100%">
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.012 0.008"
+              numOctaves="3"
+              seed="2"
+              result="noise"
+            >
+              {/* 시간에 따라 baseFrequency를 변화시켜 일렁이는 아지랑이 표현 */}
+              <animate
+                attributeName="baseFrequency"
+                values="0.012 0.008;0.014 0.010;0.012 0.008"
+                dur="4s"
+                repeatCount="indefinite"
+              />
+            </feTurbulence>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="18" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
+
+      {/* 아지랑이 적용 영역 — 하단 30% 영역에 왜곡 오버레이 */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '30%',
+          // 실제 배경 픽셀을 왜곡하기 위해 배경과 동일한 패턴을 얹는 대신
+          // 반투명 레이어에 필터를 걸어 아래 레이어가 일렁이는 것처럼 보이게 함
+          background: 'linear-gradient(to top, rgba(255,240,200,0.06) 0%, transparent 100%)',
+          filter: 'url(#haze-filter)',
+          backdropFilter: 'blur(0.3px)',
+        }}
+      />
+
+      {/* 꽃가루/먼지 입자 */}
+      {pollen.map(p => (
+        <motion.div
+          key={p.id}
+          style={{
+            position: 'absolute',
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: p.size,
+            height: p.size,
+            borderRadius: '50%',
+            background: `rgba(255, 240, 180, ${p.opacity})`,
+            boxShadow: `0 0 ${p.size * 2}px rgba(255,230,120,${p.opacity * 0.8})`,
+          }}
+          animate={{
+            x: [0, p.dx, 0],
+            y: [0, p.dy, 0],
+            opacity: [0, p.opacity, p.opacity * 0.6, 0],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            repeatDelay: 1 + Math.random() * 3,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+
+      {/* 빛 보케 — 흐릿한 원형 빛 방울 */}
+      {bokeh.map(b => (
+        <motion.div
+          key={b.id}
+          style={{
+            position: 'absolute',
+            left: `${b.x}%`,
+            top: `${b.y}%`,
+            width: b.size,
+            height: b.size,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,245,200,1) 0%, rgba(255,220,100,0.4) 50%, transparent 70%)',
+            filter: 'blur(12px)',
+            transform: 'translate(-50%, -50%)',
+            mixBlendMode: 'screen',
+          }}
+          animate={{
+            y: [0, b.dy],
+            opacity: [0, b.opacity, b.opacity * 0.5, 0],
+            scale: [0.6, 1.2, 0.8],
+          }}
+          transition={{
+            duration: b.duration,
+            delay: b.delay,
+            repeat: Infinity,
+            repeatDelay: 2 + Math.random() * 4,
+            ease: 'easeOut',
+          }}
+        />
+      ))}
+
+    </div>
+  );
+}
+
 interface Props {
   bgKey: string;
 }
 
 export default function WeatherSceneEffect({ bgKey }: Props) {
   switch (bgKey) {
-    case 'rainy':    return <RainyScene />;
-    case 'misty':    return <><MistyScene /><MistyEffect /></>;
-    case 'windy':    return <WindyScene />;
-    case 'overcast': return <OvercastScene />;
-    case 'sunset':   return <SunsetScene />;
-    default:         return null;
+    case 'rainy':       return <RainyScene />;
+    case 'misty':       return <><MistyScene /><MistyEffect /></>;
+    case 'windy':       return <WindyScene />;
+    case 'overcast':    return <OvercastScene />;
+    case 'sunset':      return <SunsetScene />;
+    case 'clear_sunny': return <ClearSunnyScene />;
+    default:            return null;
   }
 }

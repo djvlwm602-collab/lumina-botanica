@@ -79,11 +79,10 @@ const FRAG = `
 
     density *= mask * edgeFade;
 
-    // 주기적으로 사라졌다 나타나는 파동 — 두 사인파를 겹쳐 불규칙하게 숨쉬는 느낌
-    // 주기 약 14s(기본) + 9s(보조) → 박자가 어긋나며 자연스러운 출몰 반복
-    float breathe = sin(uTime * 0.18) * 0.5 + 0.5;           // 0~1, 주기 ~35s
-    breathe      *= sin(uTime * 0.09 + 1.3) * 0.35 + 0.65;  // 0.3~1 변조, 주기 ~70s
-    breathe       = smoothstep(0.05, 0.95, breathe);         // 넓은 범위 — 더 천천히 전환
+    // 주기적으로 사라졌다 나타나는 파동 — 시작부터 안개가 보이도록 PI/2 오프셋 적용
+    float breathe = sin(uTime * 0.18 + 1.57) * 0.5 + 0.5;   // 시작값 1.0 → 바로 최대
+    breathe      *= sin(uTime * 0.09 + 1.3) * 0.35 + 0.65;  // 0.3~1 변조
+    breathe       = smoothstep(0.05, 0.80, breathe);         // 상한 낮춰 전환 빠르게
 
     // 알파 스케일 — 배경이 완전히 가려지지 않도록 최대 0.72
     float alpha = clamp(density * 0.85 * breathe, 0.0, 0.72);
