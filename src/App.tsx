@@ -96,7 +96,7 @@ export default function App() {
   }, [bgKey]);
 
   const { scrollYProgress } = useScroll();
-  const scale = useTransform(scrollYProgress, [0, 1], [1.1, 1.7]);
+  const scale = useTransform(scrollYProgress, [0, 1], [1.1, 1.3]);
 
   // 마우스 위치 → 배경 패럴랙스용 모션 값
   const rawX = useMotionValue(0);
@@ -263,9 +263,10 @@ export default function App() {
 
       {/* Spline 3D — 항상 표시 (벌+꽃이 같은 씬이라 분리 불가) */}
       {/* windy: 꽃이 바람에 흔들리는 느낌 — 컨테이너 전체를 좌우로 불규칙하게 기울임 */}
+      {/* origin-bottom: 스케일 기준축을 맨 하단 중앙으로 고정, bottom:-70px로 하단을 화면 밖으로 70px 내림 */}
       <motion.div
-        style={{ scale }}
-        className="fixed inset-0 z-[2] pointer-events-auto origin-bottom"
+        style={{ scale, bottom: '-70px' }}
+        className="fixed top-0 left-0 right-0 z-[2] pointer-events-auto origin-bottom"
         animate={bgKey === 'windy' ? {
           rotate: [0, -3, 1.5, -4.5, 2, -2.5, 0.5, -3.5, 0],
           x:      [0,  6,  -3,   8, -4,    5, -2,    7,  0],
