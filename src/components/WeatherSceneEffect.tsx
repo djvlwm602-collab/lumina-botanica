@@ -187,8 +187,9 @@ function WindyScene() {
   );
 }
 
-// ── Overcast: 구름 그림자 천천히 흐름 ────────────────────────
+// ── Overcast: 구름 그림자 + 주기적 어두워짐 + 차가운 색조 + 산란광 ──
 function OvercastScene() {
+  // 기존 구름 그림자 밴드
   const bands = useMemo(() =>
     Array.from({ length: 5 }, (_, i) => ({
       id: i,
@@ -199,8 +200,131 @@ function OvercastScene() {
       delay: Math.random() * 18,
     })), []);
 
+  // 산란광: 화면 곳곳에 흐릿한 차가운 빛 번짐
+  const glows = useMemo(() =>
+    Array.from({ length: 6 }, (_, i) => ({
+      id: i,
+      x: 10 + Math.random() * 80,
+      y: 5 + Math.random() * 70,
+      size: 200 + Math.random() * 280,
+      opacity: 0.04 + Math.random() * 0.06,
+      duration: 8 + Math.random() * 10,
+      delay: Math.random() * 8,
+    })), []);
+
+  // 이슬비: rainy보다 훨씬 얇고 연한 빗줄기
+  const drizzles = useMemo(() =>
+    Array.from({ length: 60 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 110,
+      delay: Math.random() * 5,
+      duration: 1.2 + Math.random() * 1.0,
+      opacity: 0.06 + Math.random() * 0.10,
+      length: 10 + Math.random() * 16,
+    })), []);
+
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 2 }}>
+
+      {/* 차가운 색조 오버레이 — 식물을 가리지 않도록 상단 위주로만 적용 */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(180deg, rgba(100,130,180,0.18) 0%, rgba(80,110,160,0.06) 60%, transparent 100%)',
+          mixBlendMode: 'multiply',
+        }}
+      />
+
+      {/* 주기적 어두워짐 — 하단(식물 영역) 제외, 상단에서 페이드 */}
+      <motion.div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(180deg, rgba(30,40,65,1) 0%, rgba(30,40,65,0.3) 60%, transparent 100%)',
+        }}
+        animate={{ opacity: [0.08, 0.22, 0.08] }}
+        transition={{
+          duration: 12,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          times: [0, 0.45, 1],
+          repeatDelay: 3,
+        }}
+      />
+
+      {/* 산란광 — 차가운 흰빛 blob이 주기적으로 나타났다 사라짐 */}
+      {glows.map(g => (
+        <motion.div
+          key={g.id}
+          style={{
+            position: 'absolute',
+            left: `${g.x}%`,
+            top: `${g.y}%`,
+            width: g.size,
+            height: g.size,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(200,220,255,1) 0%, transparent 70%)',
+            filter: 'blur(50px)',
+            transform: 'translate(-50%, -50%)',
+            mixBlendMode: 'screen',
+          }}
+          animate={{ opacity: [0, g.opacity * 5, 0] }}
+          transition={{
+            duration: g.duration,
+            delay: g.delay,
+            repeat: Infinity,
+            repeatDelay: 2 + Math.random() * 3,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+
+      {/* 소용돌이 흐림 — 대형 반투명 blob이 화면 중심에서 느리게 회전 */}
+      <motion.div
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          width: '160vw',
+          height: '160vw',
+          marginTop: '-80vw',
+          marginLeft: '-80vw',
+          borderRadius: '50%',
+          // opacity를 높여 회전이 눈에 띄게
+          background: 'conic-gradient(from 0deg, transparent 0%, rgba(90,110,160,0.10) 20%, transparent 40%, rgba(60,85,140,0.08) 60%, transparent 80%, rgba(90,110,160,0.10) 100%)',
+          filter: 'blur(35px)',
+          mixBlendMode: 'multiply',
+        }}
+        animate={{ rotate: [0, 360] }}
+        transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
+      />
+
+      {/* 이슬비 — 얇고 연한 빗줄기, rainy의 1/3 굵기 */}
+      {drizzles.map(d => (
+        <motion.div
+          key={d.id}
+          style={{
+            position: 'absolute',
+            left: `${d.x}%`,
+            top: '-20px',
+            width: '1px',
+            height: `${d.length}px`,
+            background: `rgba(180,210,240,${d.opacity * 2.5})`,
+            borderRadius: '1px',
+          }}
+          animate={{ y: ['0vh', '110vh'], opacity: [0, d.opacity * 2.5, d.opacity * 2.5, 0] }}
+          transition={{
+            duration: d.duration,
+            delay: d.delay,
+            repeat: Infinity,
+            repeatDelay: Math.random() * 0.8,
+            ease: 'linear',
+          }}
+        />
+      ))}
+
+      {/* 기존 구름 그림자 밴드 */}
       {bands.map(b => (
         <motion.div
           key={b.id}
